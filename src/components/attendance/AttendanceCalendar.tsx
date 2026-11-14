@@ -126,8 +126,24 @@ export const AttendanceCalendar: React.FC = () => {
 
     if (isToday) {
       if (isCheckedIn) {
+        // Evaluate if check-in time was after 09:10 AM grace cutoff
+        let isLateCheckIn = false;
+        if (checkInTime) {
+          const match = checkInTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+          if (match) {
+            let h = parseInt(match[1], 10);
+            const m = parseInt(match[2], 10);
+            const meridiem = (match[3] || '').toUpperCase();
+            if (meridiem === 'PM' && h < 12) h += 12;
+            if (meridiem === 'AM' && h === 12) h = 0;
+            if (h * 60 + m > 9 * 60 + 10) {
+              isLateCheckIn = true;
+            }
+          }
+        }
+        const activeStatus: AttendanceStatus = isLateCheckIn ? 'Half Day Leave' : 'Present';
         return {
-          status: 'Present',
+          status: activeStatus,
           record: {
             id: `ATT-TODAY-${formattedDate}`,
             date: formattedDate,
@@ -137,8 +153,10 @@ export const AttendanceCalendar: React.FC = () => {
             workingHours: isCheckedOut ? 'Completed' : 'In Progress',
             workingMinutes: 0,
             breakDuration: '-',
-            status: 'Present',
-            note: 'Today - Active working session',
+            status: activeStatus,
+            note: isLateCheckIn
+              ? `Today - Checked in at ${checkInTime} (after 09:10 AM cutoff) • Marked as Half Day Leave`
+              : 'Today - Active working session (Shift 09:00 AM - 05:30 PM)',
           },
         };
       }

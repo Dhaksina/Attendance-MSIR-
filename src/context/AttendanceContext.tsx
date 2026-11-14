@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   DailyAttendanceRecord,
+  AttendanceStatus,
   WorkingTimelineItem,
   LeaveBalance,
   LeaveRequest,
@@ -147,9 +148,9 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           },
           {
             id: 'tl-4',
-            time: '05:45 PM',
+            time: '05:30 PM',
             title: 'Check Out',
-            description: 'Scheduled end of day shift',
+            description: 'Scheduled end of day shift (05:30 PM)',
             type: 'check-out',
             completed: false,
           },
@@ -159,9 +160,9 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return [
       {
         id: 'tl-1',
-        time: '09:15 AM',
+        time: '09:00 AM',
         title: 'Check In (Scheduled)',
-        description: 'General Shift (09:15 AM - 05:45 PM). Awaiting entry punch.',
+        description: 'General Shift (09:00 AM - 05:30 PM • Cutoff: 09:10 AM). Awaiting entry punch.',
         type: 'check-in',
         completed: false,
       },
@@ -183,9 +184,9 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       },
       {
         id: 'tl-4',
-        time: '05:45 PM',
+        time: '05:30 PM',
         title: 'Check Out',
-        description: 'Scheduled end of day shift',
+        description: 'Scheduled end of day shift (05:30 PM)',
         type: 'check-out',
         completed: false,
       },
@@ -398,7 +399,14 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       (e) => (empId && e.employeeId === empId) || (userId && e.id === userId)
     );
 
-    if (empRecord && empRecord.todayCheckIn && empRecord.todayStatus === 'Present') {
+    if (
+      empRecord &&
+      empRecord.todayCheckIn &&
+      (empRecord.todayStatus === 'Present' ||
+        empRecord.todayStatus === 'Half Day Leave' ||
+        empRecord.todayStatus === 'Half Day' ||
+        empRecord.todayStatus === 'Late')
+    ) {
       setIsCheckedIn(true);
       setIsCheckedOut(Boolean(empRecord.todayCheckOut));
       setCheckInTime(empRecord.todayCheckIn);
@@ -665,44 +673,76 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       ...prev.filter((i) => i.type !== 'check-in'),
     ]);
 
+    // Office timings: 09:00 AM to 05:30 PM.
+    // Grace cutoff: 09:10 AM. Punches after 09:10 AM are automatically marked as Half Day Leave.
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const cutoffMinutes = 9 * 60 + 10; // 09:10 AM = 550 minutes
+    const isAfterCutoff = currentMinutes > cutoffMinutes;
+    const punchStatus: AttendanceStatus = isAfterCutoff ? 'Half Day Leave' : 'Present';
+
+    const todayStr = now.toISOString().split('T')[0];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
     // Update history record today
-    setAttendanceHistory((prev) =>
-      prev.map((rec, idx) =>
-        idx === 0
-          ? {
-              ...rec,
-              checkIn: formatted,
-              status: 'Present',
-              location: loc.address,
-              mapsUrl: loc.mapsUrl,
-              locationData: loc,
-            }
-          : rec
-      )
-    );
+    const newRecord: DailyAttendanceRecord = {
+      id: `ATT-${Date.now()}`,
+      date: todayStr,
+      dayName: dayNames[now.getDay()],
+      checkIn: formatted,
+      checkOut: null,
+      workingHours: 'In Progress',
+      workingMinutes: 0,
+      breakDuration: '-',
+      status: punchStatus,
+      location: loc.address,
+      mapsUrl: loc.mapsUrl,
+      locationData: loc,
+      note: isAfterCutoff
+        ? `Late check-in at ${formatted} (after 09:10 AM grace cutoff) • Marked as Half Day Leave`
+        : `On-time check-in at ${formatted} • Shift 09:00 AM - 05:30 PM`,
+    };
 
-    // Update employees directory so Admin sees where THIS employee is in real time!
+    setAttendanceHistory((prev) => {
+      const filtered = prev.filter((rec) => rec.date !== todayStr);
+      return [newRecord, ...filtered];
+    });
+
+    // Save attendance punch to cloud database
+    dbService.saveAttendanceRecord(newRecord);
+
+    // Update employees directory so Admin and Manager see real-time status & location
     setEmployees((prev) =>
-      prev.map((emp) =>
-        emp.employeeId === empId || emp.id === userId || (empId === 'EMP41001' && emp.id === 'EMP-01')
-          ? {
-              ...emp,
-              todayStatus: 'Present',
-              todayCheckIn: formatted,
-              todayLocation: loc.address,
-              todayLocationType: loc.locationType,
-              todayCoordinates: { lat: loc.latitude, lng: loc.longitude },
-              todayMapsUrl: loc.mapsUrl,
-            }
-          : emp
-      )
+      prev.map((emp) => {
+        if (emp.employeeId === empId || emp.id === userId || (empId === 'EMP41001' && emp.id === 'EMP-01')) {
+          const updatedEmp: EmployeeDirectoryItem = {
+            ...emp,
+            todayStatus: punchStatus,
+            todayCheckIn: formatted,
+            todayLocation: loc.address,
+            todayLocationType: loc.locationType,
+            todayCoordinates: { lat: loc.latitude, lng: loc.longitude },
+            todayMapsUrl: loc.mapsUrl,
+          };
+          dbService.saveEmployee(updatedEmp);
+          return updatedEmp;
+        }
+        return emp;
+      })
     );
 
-    addNotification(
-      'Attendance Marked with Location',
-      `Checked in at ${formatted} from ${loc.address} (${loc.locationType} - ${loc.source}).`,
-      'attendance'
-    );
+    if (isAfterCutoff) {
+      addNotification(
+        'Check-In: Half Day Leave Marked',
+        `Checked in at ${formatted} (past 09:10 AM cutoff). Office shift is 09:00 AM - 05:30 PM. Attendance marked as Half Day Leave.`,
+        'attendance'
+      );
+    } else {
+      addNotification(
+        'Attendance Marked (On Time)',
+        `Checked in on time at ${formatted} from ${loc.address} (Shift 09:00 AM - 05:30 PM).`,
+        'attendance'
+      );
+    }
 
     return loc;
   };
@@ -786,37 +826,47 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const minutes = Math.floor((workingDurationSeconds % 3600) / 60);
     const formattedHours = `${hours}h ${minutes}m`;
 
+    let updatedHistoryRecord: DailyAttendanceRecord | null = null;
     setAttendanceHistory((prev) =>
-      prev.map((item, idx) =>
-        idx === 0
-          ? {
-              ...item,
-              checkOut: formatted,
-              workingHours: formattedHours,
-              workingMinutes: Math.floor(workingDurationSeconds / 60),
-              checkOutLocation: loc.address,
-              checkOutLocationData: loc,
-              checkOutMapsUrl: loc.mapsUrl,
-            }
-          : item
-      )
+      prev.map((item, idx) => {
+        if (idx === 0) {
+          updatedHistoryRecord = {
+            ...item,
+            checkOut: formatted,
+            workingHours: formattedHours,
+            workingMinutes: Math.floor(workingDurationSeconds / 60),
+            checkOutLocation: loc.address,
+            checkOutLocationData: loc,
+            checkOutMapsUrl: loc.mapsUrl,
+          };
+          return updatedHistoryRecord;
+        }
+        return item;
+      })
     );
+
+    if (updatedHistoryRecord) {
+      dbService.saveAttendanceRecord(updatedHistoryRecord);
+    }
 
     // Update employees directory for THIS employee
     setEmployees((prev) =>
-      prev.map((emp) =>
-        emp.employeeId === empId || emp.id === userId || (empId === 'EMP41001' && emp.id === 'EMP-01')
-          ? {
-              ...emp,
-              todayCheckOut: formatted,
-              todayCheckOutLocation: loc.address,
-              todayCheckOutCoordinates: { lat: loc.latitude, lng: loc.longitude },
-              todayCheckOutMapsUrl: loc.mapsUrl,
-              todayCheckOutLocationType: loc.locationType,
-              todayCheckOutLocationData: loc,
-            }
-          : emp
-      )
+      prev.map((emp) => {
+        if (emp.employeeId === empId || emp.id === userId || (empId === 'EMP41001' && emp.id === 'EMP-01')) {
+          const updatedEmp: EmployeeDirectoryItem = {
+            ...emp,
+            todayCheckOut: formatted,
+            todayCheckOutLocation: loc.address,
+            todayCheckOutCoordinates: { lat: loc.latitude, lng: loc.longitude },
+            todayCheckOutMapsUrl: loc.mapsUrl,
+            todayCheckOutLocationType: loc.locationType,
+            todayCheckOutLocationData: loc,
+          };
+          dbService.saveEmployee(updatedEmp);
+          return updatedEmp;
+        }
+        return emp;
+      })
     );
 
     addNotification(
@@ -853,9 +903,9 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setTimelineItems([
       {
         id: 'tl-1',
-        time: '09:15 AM',
+        time: '09:00 AM',
         title: 'Check In (Scheduled)',
-        description: 'General Shift (09:15 AM - 05:45 PM). Awaiting entry punch.',
+        description: 'General Shift (09:00 AM - 05:30 PM • Cutoff: 09:10 AM). Awaiting entry punch.',
         type: 'check-in',
         completed: false,
       },
@@ -877,9 +927,9 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       },
       {
         id: 'tl-4',
-        time: '05:45 PM',
+        time: '05:30 PM',
         title: 'Check Out',
-        description: 'Scheduled end of day shift',
+        description: 'Scheduled end of day shift (05:30 PM)',
         type: 'check-out',
         completed: false,
       },
@@ -895,7 +945,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               workingHours: '-',
               workingMinutes: 0,
               status: 'Absent',
-              note: 'Scheduled General Shift (09:15 AM - 05:45 PM)',
+              note: 'Scheduled General Shift (09:00 AM - 05:30 PM)',
             }
           : rec
       )

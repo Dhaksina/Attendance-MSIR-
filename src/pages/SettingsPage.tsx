@@ -43,13 +43,13 @@ export const SettingsPage: React.FC = () => {
   };
 
   // Form states
-  const [gracePeriod, setGracePeriod] = useState('15');
-  const [geofenceRadius, setGeofenceRadius] = useState('150');
+  const [gracePeriod, setGracePeriod] = useState('10');
+  const [geofenceRadius, setGeofenceRadius] = useState('2000');
   const [autoCheckout, setAutoCheckout] = useState(true);
   const [soundAlerts, setSoundAlerts] = useState(true);
   const [emailDigest, setEmailDigest] = useState(true);
-  const [shiftStart, setShiftStart] = useState('09:15');
-  const [shiftEnd, setShiftEnd] = useState('17:45');
+  const [shiftStart, setShiftStart] = useState('09:00');
+  const [shiftEnd, setShiftEnd] = useState('17:30');
   const [twoFactorAuth, setTwoFactorAuth] = useState(true);
   const [timeFormat, setTimeFormat] = useState('12h');
 
@@ -207,7 +207,7 @@ export const SettingsPage: React.FC = () => {
                     className="w-full px-3 py-2 bg-[#F8FAFC] border border-[#E4EAF1] rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-[#3D78C5]"
                   />
                   <p className="text-[11px] text-[#667085] mt-1">
-                    Check-in within 15 mins will not trigger a late flag.
+                    Check-in after 10 mins (past 09:10 AM) automatically marks Half Day Leave.
                   </p>
                 </div>
 
@@ -262,7 +262,7 @@ export const SettingsPage: React.FC = () => {
                       Daily Check-out Push Reminder
                     </span>
                     <span className="text-xs text-[#667085]">
-                      Notify me 15 minutes before shift end (05:45 PM)
+                      Notify me 15 minutes before shift end (05:30 PM)
                     </span>
                   </div>
                   <input
@@ -398,7 +398,7 @@ export const SettingsPage: React.FC = () => {
                           : 'bg-[#F8FAFC] text-[#667085] border border-[#E4EAF1]'
                       }`}
                     >
-                      12-Hour (09:15 AM)
+                      12-Hour (09:00 AM)
                     </button>
                     <button
                       onClick={() => setTimeFormat('24h')}
@@ -408,7 +408,7 @@ export const SettingsPage: React.FC = () => {
                           : 'bg-[#F8FAFC] text-[#667085] border border-[#E4EAF1]'
                       }`}
                     >
-                      24-Hour (09:15)
+                      24-Hour (09:00)
                     </button>
                   </div>
                 </div>

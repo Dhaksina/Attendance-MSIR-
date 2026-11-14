@@ -239,7 +239,7 @@ export const calculateEmployeeMonthlyAttendance = (
         if (leaveOnDate.status === 'Approved') {
           // Employee still present during workday
           status = 'Present';
-          checkIn = '09:15 AM';
+          checkIn = '09:00 AM';
           checkOut = '05:30 PM';
           workingMinutes = 495;
           workingHours = '8h 15m';

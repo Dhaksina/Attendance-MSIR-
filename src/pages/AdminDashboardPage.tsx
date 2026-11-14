@@ -229,7 +229,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
             {lateToday}
           </h3>
           <span className="text-[11px] text-amber-600 font-semibold mt-1 block">
-            Past 09:15 AM
+            Past 09:10 AM (Half Day Leave)
           </span>
         </div>
       </div>

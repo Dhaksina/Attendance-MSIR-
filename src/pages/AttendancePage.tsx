@@ -26,6 +26,7 @@ export const AttendancePage: React.FC = () => {
     checkOutTime,
     workingDuration,
     todayStatus,
+    attendanceHistory,
     regularizationRequests,
     checkInLocation,
     checkOutLocation,
@@ -123,8 +124,18 @@ export const AttendancePage: React.FC = () => {
           <span className="text-lg font-extrabold font-mono text-[#172033] mt-1 block">
             {checkInTime || '--:--'}
           </span>
-          <span className="text-[11px] text-emerald-600 font-semibold mt-0.5 block">
-            {isCheckedIn ? 'On Time (Shift 09:15 AM)' : 'Not checked in'}
+          <span className={`text-[11px] font-semibold mt-0.5 block ${
+            !isCheckedIn
+              ? 'text-[#667085]'
+              : attendanceHistory[0]?.status === 'Half Day Leave' || attendanceHistory[0]?.status === 'Half Day'
+              ? 'text-orange-600 font-bold'
+              : 'text-emerald-600'
+          }`}>
+            {!isCheckedIn
+              ? 'Not checked in'
+              : attendanceHistory[0]?.status === 'Half Day Leave' || attendanceHistory[0]?.status === 'Half Day'
+              ? 'Half Day Leave (Late > 09:10 AM)'
+              : 'On Time (Shift 09:00 AM)'}
           </span>
         </div>
 
@@ -134,7 +145,7 @@ export const AttendancePage: React.FC = () => {
             {checkOutTime || '--:--'}
           </span>
           <span className="text-[11px] text-[#667085] font-medium mt-0.5 block">
-            Expected: 05:45 PM
+            Expected: 05:30 PM
           </span>
         </div>
 

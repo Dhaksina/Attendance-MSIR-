@@ -146,7 +146,7 @@ export const WorkingTimeline: React.FC = () => {
       <div className="mt-6 pt-4 border-t border-[#E4EAF1] flex items-center justify-between text-xs text-[#667085]">
         <div className="flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-[#3D78C5]" />
-          <span>Shift: 09:15 AM - 05:45 PM (8h 30m total)</span>
+          <span>Shift: 09:00 AM - 05:30 PM (8h 30m total • Cutoff: 09:10 AM)</span>
         </div>
         <span className="font-semibold text-emerald-600">On Track</span>
       </div>

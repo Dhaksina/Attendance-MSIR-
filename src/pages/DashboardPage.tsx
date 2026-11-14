@@ -45,7 +45,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             Good Morning, {user?.name || 'Administrator'} 👋
           </h2>
           <p className="text-xs sm:text-sm text-[#667085] mt-1 leading-relaxed">
-            Here's your attendance overview for today. Shift active until 05:45 PM.
+            Here's your attendance overview for today. Shift active until 05:30 PM.
           </p>
         </div>
 

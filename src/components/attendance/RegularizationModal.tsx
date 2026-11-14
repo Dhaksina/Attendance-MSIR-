@@ -28,8 +28,8 @@ export const RegularizationModal: React.FC<RegularizationModalProps> = ({
 
   const [date, setDate] = useState(defaultDate);
   const [punchType, setPunchType] = useState<RegularizationRequest['punchType']>('Both (Full Day)');
-  const [requestedCheckIn, setRequestedCheckIn] = useState('09:15 AM');
-  const [requestedCheckOut, setRequestedCheckOut] = useState('05:45 PM');
+  const [requestedCheckIn, setRequestedCheckIn] = useState('09:00 AM');
+  const [requestedCheckOut, setRequestedCheckOut] = useState('05:30 PM');
   const [category, setCategory] = useState<RegularizationRequest['category']>('Biometric Device Glitch');
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,7 +133,7 @@ export const RegularizationModal: React.FC<RegularizationModalProps> = ({
               </label>
               <input
                 type="text"
-                placeholder="e.g. 09:15 AM"
+                placeholder="e.g. 09:00 AM"
                 value={requestedCheckIn}
                 onChange={(e) => setRequestedCheckIn(e.target.value)}
                 required
@@ -147,7 +147,7 @@ export const RegularizationModal: React.FC<RegularizationModalProps> = ({
               </label>
               <input
                 type="text"
-                placeholder="e.g. 05:45 PM"
+                placeholder="e.g. 05:30 PM"
                 value={requestedCheckOut}
                 onChange={(e) => setRequestedCheckOut(e.target.value)}
                 required

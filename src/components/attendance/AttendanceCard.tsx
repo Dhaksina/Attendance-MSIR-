@@ -72,7 +72,7 @@ export const AttendanceCard: React.FC = () => {
                   Ready to start your day, {user?.name.split(' ')[0]}?
                 </h2>
                 <p className="text-sm text-white/80 mt-1 leading-relaxed">
-                  Record your entry to begin calculating your productive hours. Real-time GPS location will be captured and verified on check-in. Shift: 09:15 AM - 05:45 PM.
+                  Record your entry to begin calculating your productive hours. Real-time GPS location will be captured and verified on check-in. Shift: 09:00 AM - 05:30 PM (Grace cutoff: 09:10 AM).
                 </p>
               </>
             ) : isCheckedOut ? (
@@ -323,7 +323,7 @@ export const AttendanceCard: React.FC = () => {
 
             <div className="flex items-center gap-2 text-xs text-white/70">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Shift: 09:15 AM - 05:45 PM (8h 30m Shift)</span>
+              <span>Shift: 09:00 AM - 05:30 PM (Grace Cutoff: 09:10 AM)</span>
             </div>
             
             <p className="text-[11px] text-white/60 flex items-center gap-1">

@@ -236,7 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         manager: matchingEmp.manager || 'HR Administrator',
         status: matchingEmp.status || 'Active',
         role: isManager ? 'manager' : 'employee',
-        shift: matchingEmp.shift || 'General Shift (09:15 AM - 05:45 PM)',
+        shift: matchingEmp.shift || 'General Shift (09:00 AM - 05:30 PM)',
         workLocation: matchingEmp.assignedGeofence || 'HQ - Tower B',
         joiningDate: matchingEmp.joiningDate || new Date().toISOString().split('T')[0],
         avatarUrl:

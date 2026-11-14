@@ -88,7 +88,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
     email: user?.email || '',
     designation: user?.designation || '',
     workLocation: user?.workLocation || 'HQ - Tower B, Floor 4 (Hybrid)',
-    shift: user?.shift || 'General Shift (09:15 AM - 05:45 PM)',
+    shift: user?.shift || 'General Shift (09:00 AM - 05:30 PM)',
     avatarUrl: user?.avatarUrl || '',
   });
 

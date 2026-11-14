@@ -108,7 +108,7 @@ export const BulkEmployeeUploadModal: React.FC<BulkEmployeeUploadModalProps> = (
         designation.toLowerCase().includes('director') ||
         designation.toLowerCase().includes('manager');
       const manager = mgrIdx !== -1 ? values[mgrIdx] : isManager ? 'Executive Board' : 'Reporting Manager';
-      const shift = shiftIdx !== -1 ? values[shiftIdx] : 'General Shift (09:15 AM - 05:45 PM)';
+      const shift = shiftIdx !== -1 ? values[shiftIdx] : 'General Shift (09:00 AM - 05:30 PM)';
       const password = passIdx !== -1 && values[passIdx] ? values[passIdx] : 'msirindia1';
 
       employees.push({

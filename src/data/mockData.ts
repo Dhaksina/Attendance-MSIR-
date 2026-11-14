@@ -23,7 +23,7 @@ export const defaultAdminProfile: UserProfile = {
   joiningDate: '01 Jan 2026',
   avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
   role: 'admin',
-  shift: 'General Shift (09:15 AM - 05:45 PM)',
+  shift: 'General Shift (09:00 AM - 05:30 PM)',
   workLocation: 'HQ - Tower B',
 };
 

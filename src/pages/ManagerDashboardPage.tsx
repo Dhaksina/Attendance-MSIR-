@@ -990,7 +990,7 @@ export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({ onNa
                       </td>
 
                       <td className="py-3 px-3 font-mono text-[#667085]">
-                        {isPresent ? '05:45 PM (Est)' : '--:--'}
+                        {isPresent ? '05:30 PM (Est)' : '--:--'}
                       </td>
 
                       <td className="py-3 px-3 font-mono font-bold text-[#123B66]">
