@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, UserRole } from '../types';
 import { defaultAdminProfile } from '../data/mockData';
+import { dbService } from '../services/dbService';
 
 // One-time cache purge key to clear any legacy dummy data from browser localStorage
 const PURGE_KEY = 'msir_v3_clean_slate';
@@ -130,12 +131,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 'admin';
   });
 
+  // Prefetch cloud employees directory on mount to guarantee logins work on fresh laptops
+  useEffect(() => {
+    dbService.getEmployees().catch(() => {});
+  }, []);
+
   const login = async (emailOrId: string, password?: string, customRole?: UserRole): Promise<UserRole> => {
     const trimmed = (emailOrId || '').trim();
     const detected = detectRoleFromId(trimmed);
     const effectiveRole: UserRole = customRole || detected.role;
 
-    // Verify if employee account exists in directory
+    // 1. Check local directory cache
     let matchingEmp: any = null;
     try {
       const savedDirectory = localStorage.getItem('msir_employees_directory');
@@ -146,6 +152,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           e.email?.toLowerCase() === trimmed.toLowerCase()
       );
     } catch {}
+
+    // 2. Fallback: If not in local cache (fresh browser session), query cloud database!
+    if (!matchingEmp && detected.roleType !== 'admin') {
+      try {
+        const cloudEmps = await dbService.getEmployees();
+        if (cloudEmps && cloudEmps.length > 0) {
+          matchingEmp = cloudEmps.find(
+            (e: any) =>
+              e.employeeId?.toLowerCase() === trimmed.toLowerCase() ||
+              e.email?.toLowerCase() === trimmed.toLowerCase()
+          );
+        }
+      } catch {}
+    }
 
     // Only Admin can log in when directory is empty or employee not found
     if (detected.roleType !== 'admin') {

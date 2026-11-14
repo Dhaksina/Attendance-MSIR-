@@ -11,15 +11,36 @@ import {
   MapPin,
   Save,
   Globe,
+  Database,
+  Server,
+  Cloud,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useAttendance } from '../context/AttendanceContext';
+import { dbService } from '../services/dbService';
+import { DatabaseConfigModal } from '../components/common/DatabaseConfigModal';
 
 export const SettingsPage: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
-  const { addNotification } = useAttendance();
+  const { addNotification, employees, leaveRequests, attendanceHistory, regularizationRequests } = useAttendance();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'attendance' | 'notifications' | 'security' | 'appearance'>('attendance');
+  const [activeTab, setActiveTab] = useState<'profile' | 'attendance' | 'notifications' | 'security' | 'appearance' | 'database'>('attendance');
+  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+  const [testResult, setTestResult] = useState<{ running: boolean; success?: boolean; message?: string } | null>(null);
+
+  const dbStatus = dbService.getStatus();
+
+  const handleTestDb = async () => {
+    setTestResult({ running: true });
+    try {
+      const res = await dbService.testConnection();
+      setTestResult({ running: false, success: res.success, message: res.message });
+    } catch (err: any) {
+      setTestResult({ running: false, success: false, message: err?.message || 'Connection test failed.' });
+    }
+  };
 
   // Form states
   const [gracePeriod, setGracePeriod] = useState('15');
@@ -71,6 +92,7 @@ export const SettingsPage: React.FC = () => {
             { id: 'notifications' as const, label: 'Notification Settings', icon: Bell },
             { id: 'security' as const, label: 'Security & Auth', icon: Shield },
             { id: 'appearance' as const, label: 'Appearance', icon: Palette },
+            { id: 'database' as const, label: 'Database & Sync', icon: Database },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -394,6 +416,119 @@ export const SettingsPage: React.FC = () => {
             </div>
           )}
 
+          {/* Database & Sync Settings */}
+          {activeTab === 'database' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#E4EAF1]">
+                <div>
+                  <h3 className="font-extrabold text-[#172033] text-lg">
+                    Cloud Database & Multi-Device Sync
+                  </h3>
+                  <p className="text-xs text-[#667085] mt-0.5">
+                    Real-time synchronization across laptops using Firebase Firestore and cloud storage.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsDbModalOpen(true)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#123B66] hover:bg-[#1a4a7f] transition-colors flex items-center gap-1.5 self-start sm:self-auto shadow-soft-xs"
+                >
+                  <Database className="w-4 h-4 text-[#F5C542]" />
+                  <span>Configure Database</span>
+                </button>
+              </div>
+
+              {/* Status Card */}
+              <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-[#E4EAF1] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-3.5 h-3.5 rounded-full shrink-0 ${
+                        dbStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+                      }`}
+                    />
+                    <div>
+                      <p className="text-sm font-bold text-[#172033]">{dbStatus.name}</p>
+                      <p className="text-xs text-[#667085] mt-0.5">{dbStatus.details}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleTestDb}
+                      disabled={testResult?.running}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-[#123B66] bg-white border border-[#E4EAF1] hover:bg-[#EAF2FB] transition-colors flex items-center gap-1.5 shadow-soft-xs disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 text-[#3D78C5] ${testResult?.running ? 'animate-spin' : ''}`} />
+                      <span>{testResult?.running ? 'Testing...' : 'Test Connection'}</span>
+                    </button>
+                    <span
+                      className={`text-xs font-extrabold px-3 py-1 rounded-full ${
+                        dbStatus.connected ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {dbStatus.connected ? 'Active & Synced' : 'Offline Mode'}
+                    </span>
+                  </div>
+                </div>
+
+                {testResult && !testResult.running && (
+                  <div
+                    className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                      testResult.success
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}
+                  >
+                    {testResult.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                    )}
+                    <span>{testResult.message}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Real-time Collections Stats */}
+              <div>
+                <h4 className="text-xs font-bold text-[#172033] uppercase tracking-wider mb-3">
+                  Live Cloud Collections
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E4EAF1]">
+                    <span className="text-[11px] font-medium text-[#667085] block">Employees</span>
+                    <span className="text-xl font-extrabold text-[#123B66] mt-1 block">{employees.length}</span>
+                    <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">Live Firestore</span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E4EAF1]">
+                    <span className="text-[11px] font-medium text-[#667085] block">Leave Requests</span>
+                    <span className="text-xl font-extrabold text-[#123B66] mt-1 block">{leaveRequests.length}</span>
+                    <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">Live Firestore</span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E4EAF1]">
+                    <span className="text-[11px] font-medium text-[#667085] block">Attendance Punches</span>
+                    <span className="text-xl font-extrabold text-[#123B66] mt-1 block">{attendanceHistory.length}</span>
+                    <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">Live Firestore</span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E4EAF1]">
+                    <span className="text-[11px] font-medium text-[#667085] block">Regularizations</span>
+                    <span className="text-xl font-extrabold text-[#123B66] mt-1 block">{regularizationRequests.length}</span>
+                    <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">Live Firestore</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Multi-Device Sync Explanation */}
+              <div className="p-4 rounded-2xl bg-[#EAF2FB] border border-[#CBE0F7] text-xs text-[#123B66] space-y-1.5">
+                <p className="font-bold">Multi-Device Real-Time Sync is Active</p>
+                <p className="text-[11px] text-[#334155] leading-relaxed">
+                  When an employee punches attendance or submits a leave application on one laptop, Firebase Firestore pushes the update immediately to all other connected laptops within 1-2 seconds via real-time listeners.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="pt-6 mt-6 border-t border-[#E4EAF1] flex justify-end">
             <button
               onClick={handleSave}
@@ -404,6 +539,12 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Cloud Database Connection Settings Modal */}
+      <DatabaseConfigModal
+        isOpen={isDbModalOpen}
+        onClose={() => setIsDbModalOpen(false)}
+      />
     </div>
   );
 };

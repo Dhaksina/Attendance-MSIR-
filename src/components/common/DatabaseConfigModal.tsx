@@ -115,7 +115,23 @@ export const DatabaseConfigModal: React.FC<DatabaseConfigModalProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const [testResult, setTestResult] = useState<{
+    running: boolean;
+    success?: boolean;
+    message?: string;
+  } | null>(null);
+
   if (!isOpen) return null;
+
+  const handleTestConnection = async () => {
+    setTestResult({ running: true });
+    try {
+      const res = await dbService.testConnection();
+      setTestResult({ running: false, success: res.success, message: res.message });
+    } catch (err: any) {
+      setTestResult({ running: false, success: false, message: err?.message || 'Connection test failed.' });
+    }
+  };
 
   const handleCopySql = () => {
     navigator.clipboard.writeText(SUPABASE_SQL_SCHEMA);
@@ -133,6 +149,7 @@ export const DatabaseConfigModal: React.FC<DatabaseConfigModalProps> = ({
         return;
       }
       saveSupabaseConfig(supabaseUrl.trim(), supabaseAnonKey.trim());
+      localStorage.setItem('msir_active_db_provider', 'supabase');
     } else {
       if (!firebaseApiKey.trim() || !firebaseProjectId.trim()) {
         setErrorMsg('Please enter Firebase API Key and Project ID.');
@@ -142,7 +159,12 @@ export const DatabaseConfigModal: React.FC<DatabaseConfigModalProps> = ({
         apiKey: firebaseApiKey.trim(),
         projectId: firebaseProjectId.trim(),
         authDomain: firebaseAuthDomain.trim() || `${firebaseProjectId.trim()}.firebaseapp.com`,
+        storageBucket: DEFAULT_FIREBASE_CONFIG.storageBucket,
+        messagingSenderId: DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+        appId: DEFAULT_FIREBASE_CONFIG.appId,
+        measurementId: DEFAULT_FIREBASE_CONFIG.measurementId,
       });
+      localStorage.setItem('msir_active_db_provider', 'firebase');
     }
 
     setSaveSuccess(true);
@@ -178,27 +200,57 @@ export const DatabaseConfigModal: React.FC<DatabaseConfigModalProps> = ({
         </div>
 
         {/* Current Connection Status Pill */}
-        <div className="mt-5 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E4EAF1] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-3 h-3 rounded-full ${
-                currentStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
-              }`}
-            />
-            <div>
-              <p className="text-xs font-bold text-[#172033]">{currentStatus.name}</p>
-              <p className="text-[11px] text-[#667085]">{currentStatus.details}</p>
+        <div className="mt-5 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E4EAF1] space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-3 h-3 rounded-full shrink-0 ${
+                  currentStatus.connected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+                }`}
+              />
+              <div>
+                <p className="text-xs font-bold text-[#172033]">{currentStatus.name}</p>
+                <p className="text-[11px] text-[#667085]">{currentStatus.details}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={testResult?.running}
+                className="px-3 py-1 rounded-xl text-xs font-bold text-[#123B66] bg-white border border-[#E4EAF1] hover:bg-[#EAF2FB] transition-colors flex items-center gap-1.5 shadow-soft-xs disabled:opacity-50"
+              >
+                <Server className="w-3.5 h-3.5 text-[#3D78C5]" />
+                <span>{testResult?.running ? 'Testing...' : 'Test Connection'}</span>
+              </button>
+              <span
+                className={`text-xs font-extrabold px-3 py-1 rounded-full ${
+                  currentStatus.connected
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-amber-100 text-amber-800'
+                }`}
+              >
+                {currentStatus.connected ? 'Connected' : 'Offline / Local'}
+              </span>
             </div>
           </div>
-          <span
-            className={`text-xs font-extrabold px-3 py-1 rounded-full ${
-              currentStatus.connected
-                ? 'bg-emerald-100 text-emerald-800'
-                : 'bg-amber-100 text-amber-800'
-            }`}
-          >
-            {currentStatus.connected ? 'Connected' : 'Offline / Local'}
-          </span>
+
+          {testResult && !testResult.running && (
+            <div
+              className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+                testResult.success
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  : 'bg-red-50 text-red-800 border border-red-200'
+              }`}
+            >
+              {testResult.success ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              )}
+              <span>{testResult.message}</span>
+            </div>
+          )}
         </div>
 
         {/* Provider Switcher */}

@@ -525,7 +525,17 @@ export const EmployeeManagementPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={() => setIsDbModalOpen(true)}
+            className="px-4 py-3 rounded-2xl font-extrabold text-xs sm:text-sm text-[#123B66] bg-[#F8FAFC] hover:bg-[#EAF2FB] border border-[#E4EAF1] shadow-soft-xs transition-colors flex items-center justify-center gap-2"
+            title="Inspect or configure Cloud Database connection"
+          >
+            <Database className="w-4 h-4 text-emerald-600" />
+            <span className="hidden sm:inline">Database</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </button>
+
           <button
             onClick={() => {
               const el = document.getElementById('employee-directory-table');
