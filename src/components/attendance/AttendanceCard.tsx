@@ -36,7 +36,6 @@ export const AttendanceCard: React.FC = () => {
     checkIn,
     checkOut,
     refreshLocation,
-    resetDay,
   } = useAttendance();
 
   const [isLocationModalOpen, setIsLocationModalOpen] = useState<boolean>(false);
@@ -331,16 +330,6 @@ export const AttendanceCard: React.FC = () => {
               <Navigation className="w-3 h-3 text-[#F5C542]" />
               <span>GPS geofencing records punch coordinates</span>
             </p>
-
-            {(isCheckedIn || isCheckedOut) && (
-              <button
-                type="button"
-                onClick={resetDay}
-                className="text-[11px] text-white/60 hover:text-white underline underline-offset-2 transition-colors cursor-pointer mt-0.5"
-              >
-                Reset Day (Back to Check In)
-              </button>
-            )}
           </div>
         </div>
       </div>
