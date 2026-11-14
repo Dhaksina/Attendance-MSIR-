@@ -12,6 +12,7 @@ import {
   Printer,
 } from 'lucide-react';
 import { useAttendance } from '../context/AttendanceContext';
+import { useAuth } from '../context/AuthContext';
 import { departmentStatsMock } from '../data/mockData';
 import { ALL_CALIBRATION_DEPARTMENT_NAMES } from '../data/calibrationRoles';
 import { PageId } from '../types';
@@ -22,6 +23,7 @@ interface ReportsPageProps {
 
 export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
   const { employees, addNotification } = useAttendance();
+  const { role } = useAuth();
 
   const [reportType, setReportType] = useState('Monthly Attendance');
   const [dateRange, setDateRange] = useState(() => {
@@ -72,8 +74,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in pb-12">
-      {/* Monthly Attendance & Salary Banner */}
-      {onNavigate && (
+      {/* Monthly Attendance & Salary Banner (Admin Only) */}
+      {onNavigate && role === 'admin' && (
         <div className="bg-gradient-to-r from-[#123B66] via-[#1E4E8C] to-[#2B63A8] text-white rounded-3xl p-5 sm:p-6 shadow-soft-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">

@@ -63,7 +63,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
       icon: FileCheck2,
       badge: managerTotalPending > 0 ? managerTotalPending : null,
     },
-    { id: 'monthly-reports' as PageId, label: 'Monthly Reports', icon: FileSpreadsheet },
     { id: 'reports' as PageId, label: 'Reports & Analytics', icon: BarChart3 },
   ];
 

@@ -104,7 +104,13 @@ const AppContent: React.FC = () => {
           <DashboardPage onNavigate={setCurrentPage} />
         );
       case 'monthly-reports':
-        return <MonthlyAttendanceReportPage onNavigate={setCurrentPage} />;
+        return role === 'admin' ? (
+          <MonthlyAttendanceReportPage onNavigate={setCurrentPage} />
+        ) : role === 'manager' ? (
+          <ManagerDashboardPage onNavigate={setCurrentPage} />
+        ) : (
+          <DashboardPage onNavigate={setCurrentPage} />
+        );
       case 'reports':
         return <ReportsPage onNavigate={setCurrentPage} />;
       case 'settings':

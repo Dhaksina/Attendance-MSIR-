@@ -53,7 +53,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                   { id: 'admin-dashboard' as PageId, label: 'Admin Overview', adminOnly: true },
                   { id: 'admin-approvals' as PageId, label: 'Approvals Hub', approverOnly: true },
                   { id: 'employee-management' as PageId, label: 'Employees', adminOnly: true },
-                  { id: 'monthly-reports' as PageId, label: 'Monthly Reports', approverOnly: true },
+                  { id: 'monthly-reports' as PageId, label: 'Monthly Reports', adminOnly: true },
                   { id: 'attendance' as PageId, label: 'Attendance' },
                   { id: 'attendance-history' as PageId, label: 'Attendance History' },
                   { id: 'leave' as PageId, label: 'Leave Management' },
