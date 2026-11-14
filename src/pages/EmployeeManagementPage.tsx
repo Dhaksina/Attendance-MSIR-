@@ -133,7 +133,7 @@ export const EmployeeManagementPage: React.FC = () => {
     designation: 'Senior Mass Calibration Engineer',
     joiningDate: new Date().toISOString().split('T')[0],
     isManager: false,
-    manager: 'Technical Director (Calibration)',
+    manager: '',
     status: 'Active' as EmployeeDirectoryItem['status'],
     geofenceEnabled: true,
     assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
@@ -141,22 +141,13 @@ export const EmployeeManagementPage: React.FC = () => {
   const [selectedSubordinateIds, setSelectedSubordinateIds] = useState<string[]>([]);
   const [subordinateSearchQuery, setSubordinateSearchQuery] = useState('');
 
-  // Default calibration laboratory managers for reporting manager assignment
-  const defaultCalibrationManagers = [
-    'Technical Director (Calibration)',
-    'Quality Manager (ISO/IEC 17025)',
-    'Mechanical & Mass Metrology Head',
-    'Thermal Metrology Manager',
-    'Electro-Technical Laboratory Manager',
-  ];
-
-  // Dynamically include any designated managers from employees list
+  // Dynamically include ONLY managers that have been created/added by the user
   const allManagerOptions = useMemo(() => {
-    const list = [...defaultCalibrationManagers];
+    const list: string[] = [];
     employees.forEach((emp) => {
       if (emp.isManager) {
         const label = `${emp.fullName} (${emp.designation})`;
-        if (!list.some((m) => m.toLowerCase().includes(emp.fullName.toLowerCase()))) {
+        if (!list.includes(label)) {
           list.push(label);
         }
       }
@@ -305,7 +296,7 @@ export const EmployeeManagementPage: React.FC = () => {
       designation: 'Senior Mass Calibration Engineer',
       joiningDate: new Date().toISOString().split('T')[0],
       isManager: false,
-      manager: 'Technical Director (Calibration)',
+      manager: allManagerOptions[0] || '',
       status: 'Active',
       geofenceEnabled: true,
       assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
@@ -551,6 +542,7 @@ export const EmployeeManagementPage: React.FC = () => {
               setForm((prev) => ({
                 ...prev,
                 employeeId: getNextEmployeeId(employees),
+                manager: allManagerOptions.includes(prev.manager) ? prev.manager : (allManagerOptions[0] || ''),
               }));
               setIsAddModalOpen(true);
             }}
@@ -1205,7 +1197,7 @@ export const EmployeeManagementPage: React.FC = () => {
                         Assign Reporting Manager <span className="text-red-500">*</span>
                       </label>
                       <select
-                        value={form.manager}
+                        value={form.manager || (allManagerOptions[0] || 'Executive Management')}
                         onChange={(e) => setForm({ ...form, manager: e.target.value })}
                         className="w-full px-3 py-2 bg-white border border-[#E4EAF1] rounded-xl text-xs sm:text-sm font-medium text-[#172033] focus:outline-none focus:border-[#3D78C5]"
                       >
@@ -1214,6 +1206,9 @@ export const EmployeeManagementPage: React.FC = () => {
                             {mgr}
                           </option>
                         ))}
+                        {allManagerOptions.length === 0 && (
+                          <option value="Executive Management">Executive Management (Default)</option>
+                        )}
                       </select>
                       <p className="text-[11px] text-[#667085] mt-1">
                         This reporting manager will oversee attendance regularizations and leave approvals for this employee.
@@ -1643,7 +1638,7 @@ export const EmployeeManagementPage: React.FC = () => {
                         Assigned Reporting Manager
                       </label>
                       <select
-                        value={editForm.manager}
+                        value={editForm.manager || (allManagerOptions[0] || 'Executive Management')}
                         onChange={(e) => setEditForm({ ...editForm, manager: e.target.value })}
                         className="w-full px-3 py-2 bg-white border border-[#E4EAF1] rounded-xl text-xs sm:text-sm font-medium text-[#172033] focus:outline-none focus:border-[#3D78C5]"
                       >
@@ -1654,6 +1649,9 @@ export const EmployeeManagementPage: React.FC = () => {
                               {mgr}
                             </option>
                           ))}
+                        {allManagerOptions.filter((m) => !editTarget || !m.toLowerCase().includes(editTarget.fullName.toLowerCase())).length === 0 && (
+                          <option value="Executive Management">Executive Management (Default)</option>
+                        )}
                       </select>
                       <p className="text-[11px] text-[#667085] mt-1">
                         This reporting manager will oversee attendance regularizations and leave approvals for this employee.
