@@ -355,7 +355,7 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
           </div>
 
           <div className="p-3.5 rounded-2xl bg-[#EAF2FB] text-xs text-[#123B66] mt-4 flex items-center justify-between font-medium">
-            <span>October Peak Turnout:</span>
+            <span>Peak Turnout:</span>
             <span className="font-bold font-mono">95.2% (Target Exceeded)</span>
           </div>
         </div>

@@ -152,7 +152,7 @@ export const AttendanceHistoryPage: React.FC = () => {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
             <input
               type="text"
-              placeholder="Search by date (e.g. 2026-10-06) or day name..."
+              placeholder="Search by date (e.g. 2026-11-14) or day name..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -189,9 +189,9 @@ export const AttendanceHistoryPage: React.FC = () => {
               onChange={(e) => setDateFilter(e.target.value)}
               className="w-full px-3 py-2.5 bg-[#F8FAFC] border border-[#E4EAF1] rounded-xl text-xs sm:text-sm font-medium text-[#172033] focus:outline-none focus:border-[#3D78C5]"
             >
-              <option value="All Months">October 2026 (Current)</option>
+              <option value="All Months">November 2026 (Current)</option>
+              <option value="Oct 2026">October 2026</option>
               <option value="Sep 2026">September 2026</option>
-              <option value="Aug 2026">August 2026</option>
             </select>
           </div>
         </div>

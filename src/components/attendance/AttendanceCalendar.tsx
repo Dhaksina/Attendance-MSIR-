@@ -15,46 +15,212 @@ import {
 } from 'lucide-react';
 import { AttendanceStatus, DailyAttendanceRecord } from '../../types';
 import { useAttendance } from '../../context/AttendanceContext';
+import { useAuth } from '../../context/AuthContext';
+import { COMPANY_HOLIDAYS_2026 } from '../../utils/monthlyAttendanceReport';
 import { RegularizationModal } from './RegularizationModal';
 
 export const AttendanceCalendar: React.FC = () => {
-  const { attendanceHistory } = useAttendance();
+  const { attendanceHistory, leaveRequests, isCheckedIn, isCheckedOut, checkInTime, checkOutTime } = useAttendance();
+  const { user } = useAuth();
   const [selectedRecord, setSelectedRecord] = useState<DailyAttendanceRecord | null>(null);
   const [isRegModalOpen, setIsRegModalOpen] = useState(false);
-  const [regTargetDate, setRegTargetDate] = useState<string>('2026-10-05');
 
-  // Month state - October 2026
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(9); // 0-indexed: 9 = October
+  // Dynamic Current Month & Year (Defaults to current active month: November 2026)
+  const today = new Date();
+  const [currentYear, setCurrentYear] = useState(() => today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => today.getMonth()); // 0-indexed: 10 = November
+  const [regTargetDate, setRegTargetDate] = useState<string>(() => today.toISOString().split('T')[0]);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Helper to determine day statuses for the month of October 2026
-  const daysInMonth = 31;
-  const firstDayOfWeek = 4; // Oct 1, 2026 was a Thursday (0 = Sun, 1 = Mon, ..., 4 = Thu)
+  // Dynamic calculation of days in the selected month & starting weekday
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
 
-  // Map known statuses from history or generate deterministic ones for October
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear((prev) => prev - 1);
+    } else {
+      setCurrentMonth((prev) => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear((prev) => prev + 1);
+    } else {
+      setCurrentMonth((prev) => prev + 1);
+    }
+  };
+
+  // Map known statuses from live database records, leave applications, holidays & shift schedule
   const getDayStatus = (day: number): { status: AttendanceStatus; record?: DailyAttendanceRecord } => {
     const formattedDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateObj = new Date(currentYear, currentMonth, day);
+    const dayOfWeek = dateObj.getDay();
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // 1. Check verified live attendance history records
     const found = attendanceHistory.find((item) => item.date === formattedDate);
     if (found) {
       return { status: found.status, record: found };
     }
 
-    // Default calculations for other days of the month
-    const dateObj = new Date(currentYear, currentMonth, day);
-    const dayOfWeek = dateObj.getDay();
+    // 2. Check approved or pending leave requests
+    const matchingLeave = leaveRequests.find(
+      (l) =>
+        (!user || !l.employeeId || l.employeeId === user.employeeId) &&
+        l.status !== 'Rejected' &&
+        l.fromDate <= formattedDate &&
+        formattedDate <= l.toDate
+    );
+    if (matchingLeave) {
+      const isPermission = matchingLeave.category === 'Permission' || matchingLeave.leaveType.toLowerCase().includes('permission');
+      return {
+        status: isPermission ? 'Half Day' : 'Leave',
+        record: {
+          id: matchingLeave.id,
+          date: formattedDate,
+          dayName: dayNames[dayOfWeek],
+          checkIn: null,
+          checkOut: null,
+          workingHours: '-',
+          workingMinutes: 0,
+          breakDuration: '-',
+          status: isPermission ? 'Half Day' : 'Leave',
+          note: `${matchingLeave.status} ${matchingLeave.leaveType}: ${matchingLeave.reason}`,
+        },
+      };
+    }
 
+    // 3. Official Company Holidays for 2026
+    const holiday = COMPANY_HOLIDAYS_2026.find((h) => h.date === formattedDate);
+    if (holiday) {
+      return {
+        status: 'Holiday',
+        record: {
+          id: `ATT-HOL-${formattedDate}`,
+          date: formattedDate,
+          dayName: dayNames[dayOfWeek],
+          checkIn: null,
+          checkOut: null,
+          workingHours: '-',
+          workingMinutes: 0,
+          breakDuration: '-',
+          status: 'Holiday',
+          note: `Official Holiday: ${holiday.name}`,
+        },
+      };
+    }
+
+    // 4. Today (Active working session)
+    const isToday =
+      day === today.getDate() &&
+      currentMonth === today.getMonth() &&
+      currentYear === today.getFullYear();
+
+    if (isToday) {
+      if (isCheckedIn) {
+        return {
+          status: 'Present',
+          record: {
+            id: `ATT-TODAY-${formattedDate}`,
+            date: formattedDate,
+            dayName: dayNames[dayOfWeek],
+            checkIn: checkInTime || 'Active Session',
+            checkOut: isCheckedOut ? checkOutTime : null,
+            workingHours: isCheckedOut ? 'Completed' : 'In Progress',
+            workingMinutes: 0,
+            breakDuration: '-',
+            status: 'Present',
+            note: 'Today - Active working session',
+          },
+        };
+      }
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        return {
+          status: 'Weekend',
+          record: {
+            id: `ATT-WKD-${formattedDate}`,
+            date: formattedDate,
+            dayName: dayNames[dayOfWeek],
+            checkIn: null,
+            checkOut: null,
+            workingHours: '-',
+            workingMinutes: 0,
+            breakDuration: '-',
+            status: 'Weekend',
+            note: 'Scheduled weekly rest day',
+          },
+        };
+      }
+      return {
+        status: 'Absent',
+        record: {
+          id: `ATT-TODAY-${formattedDate}`,
+          date: formattedDate,
+          dayName: dayNames[dayOfWeek],
+          checkIn: null,
+          checkOut: null,
+          workingHours: '-',
+          workingMinutes: 0,
+          breakDuration: '-',
+          status: 'Absent',
+          note: 'Shift scheduled today - not checked in yet. Punch check-in to record attendance.',
+        },
+      };
+    }
+
+    // 5. Past days (Before today)
+    const isPast = dateObj < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (isPast) {
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        return {
+          status: 'Weekend',
+          record: {
+            id: `ATT-WKD-${formattedDate}`,
+            date: formattedDate,
+            dayName: dayNames[dayOfWeek],
+            checkIn: null,
+            checkOut: null,
+            workingHours: '-',
+            workingMinutes: 0,
+            breakDuration: '-',
+            status: 'Weekend',
+            note: 'Scheduled weekly rest day',
+          },
+        };
+      }
+      return {
+        status: 'Absent',
+        record: {
+          id: `ATT-ABS-${formattedDate}`,
+          date: formattedDate,
+          dayName: dayNames[dayOfWeek],
+          checkIn: null,
+          checkOut: null,
+          workingHours: '-',
+          workingMinutes: 0,
+          breakDuration: '-',
+          status: 'Absent',
+          note: 'Unrecorded punch / Missed attendance. Click to apply regularization.',
+        },
+      };
+    }
+
+    // 6. Future upcoming days (After today)
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       return {
         status: 'Weekend',
         record: {
-          id: `ATT-MOCK-${day}`,
+          id: `ATT-WKD-${formattedDate}`,
           date: formattedDate,
-          dayName: dayOfWeek === 0 ? 'Sunday' : 'Saturday',
+          dayName: dayNames[dayOfWeek],
           checkIn: null,
           checkOut: null,
           workingHours: '-',
@@ -66,114 +232,19 @@ export const AttendanceCalendar: React.FC = () => {
       };
     }
 
-    if (day === 2) {
-      return {
-        status: 'Holiday',
-        record: {
-          id: `ATT-HOL-${day}`,
-          date: formattedDate,
-          dayName: 'Friday',
-          checkIn: null,
-          checkOut: null,
-          workingHours: '-',
-          workingMinutes: 0,
-          breakDuration: '-',
-          status: 'Holiday',
-          note: 'National Holiday (Gandhi Jayanti)',
-        },
-      };
-    }
-
-    if (day === 18) {
-      return {
-        status: 'Absent',
-        record: {
-          id: `ATT-ABS-${day}`,
-          date: formattedDate,
-          dayName: 'Sunday',
-          checkIn: null,
-          checkOut: null,
-          workingHours: '-',
-          workingMinutes: 0,
-          breakDuration: '-',
-          status: 'Absent',
-          note: 'Unplanned absence / Sick leave notice',
-        },
-      };
-    }
-
-    if (day === 15 || day === 16) {
-      return {
-        status: 'Leave',
-        record: {
-          id: `ATT-LEAVE-${day}`,
-          date: formattedDate,
-          dayName: day === 15 ? 'Thursday' : 'Friday',
-          checkIn: null,
-          checkOut: null,
-          workingHours: '-',
-          workingMinutes: 0,
-          breakDuration: '-',
-          status: 'Leave',
-          note: 'Approved Casual Leave',
-        },
-      };
-    }
-
-    if (day === 21) {
-      return {
-        status: 'Half Day Leave',
-        record: {
-          id: `ATT-HALF-${day}`,
-          date: formattedDate,
-          dayName: 'Wednesday',
-          checkIn: '09:15 AM',
-          checkOut: '01:45 PM',
-          workingHours: '4h 30m',
-          workingMinutes: 270,
-          breakDuration: '15m',
-          status: 'Half Day Leave',
-          note: 'Approved Half Day Leave (Personal)',
-          location: 'Office HQ',
-        },
-      };
-    }
-
-    // Past days default to present
-    if (day <= 8) {
-      return {
-        status: 'Present',
-        record: {
-          id: `ATT-NORM-${day}`,
-          date: formattedDate,
-          dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek],
-          checkIn: '09:12 AM',
-          checkOut: '06:18 PM',
-          workingHours: '8h 26m',
-          workingMinutes: 506,
-          breakDuration: '45m',
-          status: 'Present',
-          location: 'HQ Campus - Tower B',
-        },
-      };
-    }
-
-    // Other days in October
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     return {
-      status: isWeekend ? 'Weekend' : 'Present',
+      status: 'Holiday',
       record: {
-        id: `ATT-OCT-${day}`,
+        id: `ATT-FUT-${formattedDate}`,
         date: formattedDate,
-        dayName: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek],
-        checkIn: isWeekend ? null : '09:15 AM',
-        checkOut: isWeekend ? null : '06:00 PM',
-        workingHours: isWeekend ? '-' : '8h 45m',
-        workingMinutes: isWeekend ? 0 : 525,
-        breakDuration: isWeekend ? '-' : '45m',
-        status: isWeekend ? 'Weekend' : 'Present',
-        location: isWeekend ? undefined : 'Office HQ',
-        note: isWeekend ? 'Scheduled weekly rest day' : 'Scheduled working day',
+        dayName: dayNames[dayOfWeek],
+        checkIn: null,
+        checkOut: null,
+        workingHours: '-',
+        workingMinutes: 0,
+        breakDuration: '-',
+        status: 'Holiday',
+        note: 'Upcoming scheduled working day',
       },
     };
   };
@@ -198,7 +269,7 @@ export const AttendanceCalendar: React.FC = () => {
       case 'Absent':
         return 'bg-[#EF4444] text-white hover:bg-red-600 shadow-soft-xs';
       case 'Holiday':
-        return 'bg-[#CBD5E1] text-[#1e293b] hover:bg-slate-300';
+        return 'bg-[#E2E8F0] text-[#334155] hover:bg-[#CBD5E1] border border-slate-300/70';
       case 'Weekend':
         return 'bg-[#EAF2FB] text-[#3D78C5] hover:bg-blue-100 border border-[#CBE0F7]';
       default:
@@ -212,20 +283,38 @@ export const AttendanceCalendar: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-[#E4EAF1]/70">
         <div className="flex items-center justify-between w-full sm:w-auto gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <CalendarIcon className="w-5 h-5 text-[#3D78C5]" />
-              <h3 className="font-bold text-[#172033] text-base sm:text-lg">
+              <h3 className="font-extrabold text-[#172033] text-base sm:text-lg">
                 {monthNames[currentMonth]} {currentYear}
               </h3>
+              <div className="flex items-center gap-1 bg-[#F8FAFC] border border-[#E4EAF1] rounded-xl p-0.5">
+                <button
+                  type="button"
+                  onClick={handlePrevMonth}
+                  className="p-1 rounded-lg hover:bg-white text-[#667085] hover:text-[#172033] transition-colors"
+                  title="Previous Month"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextMonth}
+                  className="p-1 rounded-lg hover:bg-white text-[#667085] hover:text-[#172033] transition-colors"
+                  title="Next Month"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-            <p className="text-xs text-[#667085] mt-0.5">
+            <p className="text-xs text-[#667085] mt-1">
               Click on any date to inspect verified punch times or apply regularization
             </p>
           </div>
 
           <button
             onClick={() => {
-              setRegTargetDate(selectedRecord ? selectedRecord.date : '2026-10-05');
+              setRegTargetDate(selectedRecord ? selectedRecord.date : today.toISOString().split('T')[0]);
               setIsRegModalOpen(true);
             }}
             className="sm:hidden px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-[#123B66] hover:bg-[#1b4b7d] transition-all flex items-center gap-1 shadow-soft-xs"
@@ -266,7 +355,7 @@ export const AttendanceCalendar: React.FC = () => {
 
           <button
             onClick={() => {
-              setRegTargetDate(selectedRecord ? selectedRecord.date : '2026-10-05');
+              setRegTargetDate(selectedRecord ? selectedRecord.date : today.toISOString().split('T')[0]);
               setIsRegModalOpen(true);
             }}
             className="hidden sm:flex px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-[#123B66] hover:bg-[#1b4b7d] transition-all items-center gap-1.5 shadow-soft-xs"
@@ -297,7 +386,10 @@ export const AttendanceCalendar: React.FC = () => {
         {Array.from({ length: daysInMonth }).map((_, idx) => {
           const day = idx + 1;
           const { status, record } = getDayStatus(day);
-          const isToday = day === 8;
+          const isToday =
+            day === today.getDate() &&
+            currentMonth === today.getMonth() &&
+            currentYear === today.getFullYear();
 
           return (
             <button
@@ -322,7 +414,7 @@ export const AttendanceCalendar: React.FC = () => {
 
               <div className="hidden sm:block">
                 <span className="text-[10px] truncate block opacity-90 leading-tight">
-                  {status}
+                  {record?.note?.includes('Upcoming') ? 'Upcoming' : status}
                 </span>
                 {record?.workingHours && record.workingHours !== '-' && (
                   <span className="text-[9px] font-mono opacity-80 block">{record.workingHours}</span>
@@ -368,7 +460,7 @@ export const AttendanceCalendar: React.FC = () => {
                         : 'bg-[#EAF2FB] text-[#3D78C5] border border-blue-200 font-semibold'
                     }`}
                   >
-                    Status: {selectedRecord.status}
+                    Status: {selectedRecord.note?.includes('Upcoming') ? 'Upcoming' : selectedRecord.status}
                   </span>
                   {selectedRecord.location && (
                     <span className="text-xs text-[#667085] flex items-center gap-1">

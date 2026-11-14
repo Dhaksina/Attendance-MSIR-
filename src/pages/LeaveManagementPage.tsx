@@ -24,8 +24,9 @@ export const LeaveManagementPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [requestCategory, setRequestCategory] = useState<'Leave' | 'Permission'>('Leave');
   const [leaveType, setLeaveType] = useState<LeaveRequest['leaveType']>('Casual Leave');
-  const [fromDate, setFromDate] = useState('2026-10-20');
-  const [toDate, setToDate] = useState('2026-10-21');
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [fromDate, setFromDate] = useState(todayStr);
+  const [toDate, setToDate] = useState(todayStr);
   const [permFrom, setPermFrom] = useState('02:30 PM');
   const [permTo, setPermTo] = useState('04:30 PM');
   const [reason, setReason] = useState('');

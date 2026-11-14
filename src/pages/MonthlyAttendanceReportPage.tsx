@@ -42,8 +42,8 @@ export const MonthlyAttendanceReportPage: React.FC<MonthlyAttendanceReportPagePr
   const { employees, leaveRequests, regularizationRequests, addNotification } = useAttendance();
 
   // Selected filters
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [selectedMonth, setSelectedMonth] = useState<number>(10); // October by default
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1); // Defaults dynamically to current active month (e.g. 11 = November)
   const [selectedDepartment, setSelectedDepartment] = useState<string>('All');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');

@@ -24,7 +24,13 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
   const { employees, addNotification } = useAttendance();
 
   const [reportType, setReportType] = useState('Monthly Attendance');
-  const [dateRange, setDateRange] = useState('2026-10-01 to 2026-10-31');
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+    return `${y}-${m}-01 to ${y}-${m}-${lastDay}`;
+  });
   const [department, setDepartment] = useState('All Departments');
   const [employee, setEmployee] = useState('All Employees');
   const [status, setStatus] = useState('All');
