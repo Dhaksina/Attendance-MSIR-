@@ -7,6 +7,7 @@ import {
   setDoc,
   deleteDoc,
   writeBatch,
+  onSnapshot,
 } from 'firebase/firestore';
 import {
   EmployeeDirectoryItem,
@@ -333,6 +334,25 @@ export const dbService = {
     }
   },
 
+  async deleteLeaveRequest(id: string): Promise<void> {
+    const firestore = getFirestoreDb();
+    if (firestore) {
+      try {
+        await deleteDoc(doc(firestore, 'leave_requests', id));
+      } catch (err) {
+        console.error('Firestore deleteLeaveRequest error:', err);
+      }
+    }
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.from('leave_requests').delete().eq('id', id);
+      } catch (err) {
+        console.error('Supabase deleteLeaveRequest error:', err);
+      }
+    }
+  },
+
   // -------------------------------------------------------------
   // REGULARIZATION REQUESTS
   // -------------------------------------------------------------
@@ -388,5 +408,111 @@ export const dbService = {
         console.error('Supabase saveRegularizationRequest error:', err);
       }
     }
+  },
+
+  async deleteRegularizationRequest(id: string): Promise<void> {
+    const firestore = getFirestoreDb();
+    if (firestore) {
+      try {
+        await deleteDoc(doc(firestore, 'regularization_requests', id));
+      } catch (err) {
+        console.error('Firestore deleteRegularizationRequest error:', err);
+      }
+    }
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.from('regularization_requests').delete().eq('id', id);
+      } catch (err) {
+        console.error('Supabase deleteRegularizationRequest error:', err);
+      }
+    }
+  },
+
+  // -------------------------------------------------------------
+  // REAL-TIME MULTI-DEVICE LISTENERS (Firebase Firestore)
+  // -------------------------------------------------------------
+  subscribeToLeaveRequests(callback: (leaves: LeaveRequest[]) => void): () => void {
+    const firestore = getFirestoreDb();
+    if (firestore) {
+      try {
+        return onSnapshot(
+          collection(firestore, 'leave_requests'),
+          (snapshot) => {
+            const list = snapshot.docs.map((d) => d.data() as LeaveRequest);
+            callback(list);
+          },
+          (err) => {
+            console.warn('Firestore leave_requests listener error:', err);
+          }
+        );
+      } catch (err) {
+        console.warn('Failed to attach Firestore leave_requests listener:', err);
+      }
+    }
+    return () => {};
+  },
+
+  subscribeToRegularizations(callback: (regs: RegularizationRequest[]) => void): () => void {
+    const firestore = getFirestoreDb();
+    if (firestore) {
+      try {
+        return onSnapshot(
+          collection(firestore, 'regularization_requests'),
+          (snapshot) => {
+            const list = snapshot.docs.map((d) => d.data() as RegularizationRequest);
+            callback(list);
+          },
+          (err) => {
+            console.warn('Firestore regularization_requests listener error:', err);
+          }
+        );
+      } catch (err) {
+        console.warn('Failed to attach Firestore regularization_requests listener:', err);
+      }
+    }
+    return () => {};
+  },
+
+  subscribeToEmployees(callback: (employees: EmployeeDirectoryItem[]) => void): () => void {
+    const firestore = getFirestoreDb();
+    if (firestore) {
+      try {
+        return onSnapshot(
+          collection(firestore, 'employees'),
+          (snapshot) => {
+            const list = snapshot.docs.map((d) => d.data() as EmployeeDirectoryItem);
+            callback(list);
+          },
+          (err) => {
+            console.warn('Firestore employees listener error:', err);
+          }
+        );
+      } catch (err) {
+        console.warn('Failed to attach Firestore employees listener:', err);
+      }
+    }
+    return () => {};
+  },
+
+  subscribeToAttendance(callback: (records: DailyAttendanceRecord[]) => void): () => void {
+    const firestore = getFirestoreDb();
+    if (firestore) {
+      try {
+        return onSnapshot(
+          collection(firestore, 'attendance'),
+          (snapshot) => {
+            const list = snapshot.docs.map((d) => d.data() as DailyAttendanceRecord);
+            callback(list);
+          },
+          (err) => {
+            console.warn('Firestore attendance listener error:', err);
+          }
+        );
+      } catch (err) {
+        console.warn('Failed to attach Firestore attendance listener:', err);
+      }
+    }
+    return () => {};
   },
 };

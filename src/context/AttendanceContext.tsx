@@ -289,34 +289,70 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return employeeDirectoryMock;
   });
 
-  // Load from database if cloud connection is active
+  // Real-time synchronization across laptops & cloud database
   useEffect(() => {
+    // 1. Initial full fetch
     const syncFromCloud = async () => {
-      const status = dbService.getStatus();
-      if (status.connected) {
-        try {
-          const cloudEmps = await dbService.getEmployees();
-          if (cloudEmps && cloudEmps.length > 0) {
-            setEmployees(cloudEmps);
-          }
-          const cloudAtt = await dbService.getAttendanceRecords();
-          if (cloudAtt && cloudAtt.length > 0) {
-            setAttendanceHistory(cloudAtt);
-          }
-          const cloudLeaves = await dbService.getLeaveRequests();
-          if (cloudLeaves && cloudLeaves.length > 0) {
-            setLeaveRequests(cloudLeaves);
-          }
-          const cloudRegs = await dbService.getRegularizationRequests();
-          if (cloudRegs && cloudRegs.length > 0) {
-            setRegularizationRequests(cloudRegs);
-          }
-        } catch (err) {
-          console.error('Failed to load initial data from cloud database:', err);
+      try {
+        const cloudEmps = await dbService.getEmployees();
+        if (cloudEmps && cloudEmps.length > 0) {
+          setEmployees(cloudEmps);
         }
+        const cloudAtt = await dbService.getAttendanceRecords();
+        if (cloudAtt && cloudAtt.length > 0) {
+          setAttendanceHistory(cloudAtt);
+        }
+        const cloudLeaves = await dbService.getLeaveRequests();
+        if (cloudLeaves && cloudLeaves.length > 0) {
+          setLeaveRequests(cloudLeaves);
+        }
+        const cloudRegs = await dbService.getRegularizationRequests();
+        if (cloudRegs && cloudRegs.length > 0) {
+          setRegularizationRequests(cloudRegs);
+        }
+      } catch (err) {
+        console.warn('Initial cloud sync notice:', err);
       }
     };
     syncFromCloud();
+
+    // 2. Real-time Firebase listeners (instantly sync across all laptops!)
+    const unsubLeaves = dbService.subscribeToLeaveRequests((leaves) => {
+      if (Array.isArray(leaves)) {
+        setLeaveRequests(leaves);
+      }
+    });
+
+    const unsubRegs = dbService.subscribeToRegularizations((regs) => {
+      if (Array.isArray(regs)) {
+        setRegularizationRequests(regs);
+      }
+    });
+
+    const unsubEmps = dbService.subscribeToEmployees((emps) => {
+      if (Array.isArray(emps) && emps.length > 0) {
+        setEmployees(emps);
+      }
+    });
+
+    const unsubAtt = dbService.subscribeToAttendance((records) => {
+      if (Array.isArray(records) && records.length > 0) {
+        setAttendanceHistory(records);
+      }
+    });
+
+    // 3. Periodic background poll (every 4 seconds) as bulletproof safety net
+    const pollInterval = setInterval(() => {
+      syncFromCloud();
+    }, 4000);
+
+    return () => {
+      unsubLeaves();
+      unsubRegs();
+      unsubEmps();
+      unsubAtt();
+      clearInterval(pollInterval);
+    };
   }, []);
 
   // Sync employees to localStorage whenever updated
@@ -905,6 +941,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       appliedDate: new Date().toISOString().split('T')[0],
     };
     setLeaveRequests((prev) => [newReq, ...prev]);
+    dbService.saveLeaveRequest(newReq);
 
     // Update available balance preview
     setLeaveBalances((prev) =>
@@ -924,6 +961,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const cancelLeaveRequest = (id: string) => {
     setLeaveRequests((prev) => prev.filter((r) => r.id !== id));
+    dbService.deleteLeaveRequest(id);
     addNotification('Leave Request Cancelled', 'The pending leave request was removed.', 'leave');
   };
 
@@ -1000,19 +1038,22 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
     }
 
-    setLeaveRequests((prev) =>
-      prev.map((l) =>
+    setLeaveRequests((prev) => {
+      const updatedList = prev.map((l) =>
         l.id === id
           ? {
               ...l,
-              status: 'Approved',
+              status: 'Approved' as const,
               reviewedBy: reviewerName || 'HR Administrator',
               reviewedAt,
               adminRemarks,
             }
           : l
-      )
-    );
+      );
+      const updatedItem = updatedList.find((l) => l.id === id);
+      if (updatedItem) dbService.saveLeaveRequest(updatedItem);
+      return updatedList;
+    });
     addNotification('Leave / Permission Approved', `Request ${id} was approved by ${reviewerName || 'HR Administrator'}.`, 'leave');
   };
 
@@ -1022,19 +1063,22 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     reviewerName: string = 'HR Administrator'
   ) => {
     const reviewedAt = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-    setLeaveRequests((prev) =>
-      prev.map((l) =>
+    setLeaveRequests((prev) => {
+      const updatedList = prev.map((l) =>
         l.id === id
           ? {
               ...l,
-              status: 'Rejected',
+              status: 'Rejected' as const,
               reviewedBy: reviewerName || 'HR Administrator',
               reviewedAt,
               adminRemarks,
             }
           : l
-      )
-    );
+      );
+      const updatedItem = updatedList.find((l) => l.id === id);
+      if (updatedItem) dbService.saveLeaveRequest(updatedItem);
+      return updatedList;
+    });
     addNotification('Leave / Permission Rejected', `Request ${id} was rejected by ${reviewerName || 'Administrator'}: ${adminRemarks}`, 'leave');
   };
 
@@ -1050,6 +1094,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
 
     setRegularizationRequests((prev) => [newReq, ...prev]);
+    dbService.saveRegularizationRequest(newReq);
 
     addNotification(
       'Regularization Submitted',
@@ -1069,26 +1114,29 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const reviewedAt = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
-    // 1. Update regularization request state to Approved
-    setRegularizationRequests((prev) =>
-      prev.map((r) =>
+    // 1. Update regularization request state to Approved & sync to DB
+    setRegularizationRequests((prev) => {
+      const updatedList = prev.map((r) =>
         r.id === id
           ? {
               ...r,
-              status: 'Approved',
+              status: 'Approved' as const,
               adminRemarks,
               reviewedBy: reviewerName || 'HR Administrator',
               reviewedAt,
             }
           : r
-      )
-    );
+      );
+      const updated = updatedList.find((r) => r.id === id);
+      if (updated) dbService.saveRegularizationRequest(updated);
+      return updatedList;
+    });
 
     // 2. Automatically regularize the attendance history record: change status to 'Present'
     setAttendanceHistory((prev) => {
       const exists = prev.find((item) => item.date === target.date);
       if (exists) {
-        return prev.map((item) =>
+        const updated = prev.map((item) =>
           item.date === target.date
             ? {
                 ...item,
@@ -1096,11 +1144,14 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 checkOut: target.requestedCheckOut,
                 workingHours: '8h 30m',
                 workingMinutes: 510,
-                status: 'Present',
+                status: 'Present' as const,
                 note: `Regularized by ${reviewerName || 'Admin'}: ${adminRemarks}`,
               }
             : item
         );
+        const record = updated.find((item) => item.date === target.date);
+        if (record) dbService.saveAttendanceRecord(record);
+        return updated;
       } else {
         const dateObj = new Date(target.date);
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1116,6 +1167,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           status: 'Present',
           note: `Regularized by ${reviewerName || 'Admin'}: ${adminRemarks}`,
         };
+        dbService.saveAttendanceRecord(newRecord);
         return [newRecord, ...prev];
       }
     });
@@ -1148,19 +1200,22 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const reviewedAt = new Date().toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
-    setRegularizationRequests((prev) =>
-      prev.map((r) =>
+    setRegularizationRequests((prev) => {
+      const updatedList = prev.map((r) =>
         r.id === id
           ? {
               ...r,
-              status: 'Rejected',
+              status: 'Rejected' as const,
               adminRemarks,
               reviewedBy: reviewerName || 'HR Administrator',
               reviewedAt,
             }
           : r
-      )
-    );
+      );
+      const updated = updatedList.find((r) => r.id === id);
+      if (updated) dbService.saveRegularizationRequest(updated);
+      return updatedList;
+    });
 
     addNotification(
       'Regularization Rejected',
