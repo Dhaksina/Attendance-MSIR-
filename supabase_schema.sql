@@ -101,3 +101,4 @@ CREATE TABLE IF NOT EXISTS public.regularization_requests (
 ALTER TABLE public.regularization_requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public Access Regularizations" ON public.regularization_requests;
 CREATE POLICY "Public Access Regularizations" ON public.regularization_requests FOR ALL USING (true) WITH CHECK (true);
+

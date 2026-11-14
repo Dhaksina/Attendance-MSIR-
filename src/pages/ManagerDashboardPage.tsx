@@ -1005,7 +1005,7 @@ export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({ onNa
                           </span>
                         </div>
                         <span className="text-[10px] text-[#667085] block mt-0.5">
-                          {emp.geofenceEnabled === false ? 'Policy Exempted' : '250m Campus Perimeter'}
+                          {emp.geofenceEnabled === false ? 'Policy Exempted' : '2km Campus Perimeter'}
                         </span>
                       </td>
 

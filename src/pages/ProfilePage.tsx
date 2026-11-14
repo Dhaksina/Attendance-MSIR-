@@ -1118,7 +1118,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                               : 'bg-slate-100 text-[#667085]'
                           }`}
                         >
-                          {emp.geofenceEnabled !== false ? '250m Active' : 'Exempted Remote'}
+                          {emp.geofenceEnabled !== false ? '2km Active' : 'Exempted Remote'}
                         </span>
                       </div>
                     </div>

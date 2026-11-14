@@ -126,7 +126,7 @@ export const BulkEmployeeUploadModal: React.FC<BulkEmployeeUploadModalProps> = (
         todayStatus: 'Absent',
         joiningDate: new Date().toISOString().split('T')[0],
         geofenceEnabled: true,
-        assignedGeofence: 'HQ - Chromepet, Tambaram (250m)',
+        assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
         password,
         avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=${isManager ? '123B66' : '3D78C5'}&color=fff`,
       });

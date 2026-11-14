@@ -381,7 +381,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           mapsUrl: empRecord.todayMapsUrl || `https://www.google.com/maps?q=${empRecord.todayCoordinates?.lat || OFFICE_GEOFENCE.latitude},${empRecord.todayCoordinates?.lng || OFFICE_GEOFENCE.longitude}`,
           isWithinGeofence: empRecord.isWithinGeofence !== false,
           geofenceDistance: empRecord.geofenceDistance,
-          permittedRadius: 250,
+          permittedRadius: OFFICE_GEOFENCE.permittedRadiusMeters,
         });
       } else {
         setCheckInLocation(null);
@@ -399,7 +399,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           timestamp: empRecord.todayCheckOut || '',
           mapsUrl: empRecord.todayCheckOutMapsUrl || `https://www.google.com/maps?q=${empRecord.todayCheckOutCoordinates?.lat || OFFICE_GEOFENCE.latitude},${empRecord.todayCheckOutCoordinates?.lng || OFFICE_GEOFENCE.longitude}`,
           isWithinGeofence: true,
-          permittedRadius: 250,
+          permittedRadius: OFFICE_GEOFENCE.permittedRadiusMeters,
         });
       } else {
         setCheckOutLocation(null);
@@ -1229,7 +1229,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       ...emp,
       id: `EMP-${Math.floor(100 + Math.random() * 900)}`,
       geofenceEnabled: emp.geofenceEnabled !== undefined ? emp.geofenceEnabled : true,
-      assignedGeofence: emp.assignedGeofence || 'Science & Industrial Resources (Chromepet, Tambaram • 250m)',
+      assignedGeofence: emp.assignedGeofence || 'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
       isWithinGeofence: emp.geofenceEnabled === false ? true : geo.isWithin,
       geofenceDistance: geo.distance,
     };

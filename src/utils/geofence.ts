@@ -16,7 +16,7 @@ export const OFFICE_GEOFENCE: OfficeGeofenceConfig = {
   address: '2nd Floor, Science & Industrial Resources, #40, 2nd St, Lakshmi Nagar, Padmavathy Nagar, Chromepet, Tambaram, Tamil Nadu 600044',
   latitude: 12.9516,
   longitude: 80.1410,
-  permittedRadiusMeters: 250, // Permitted office boundary: 250 meters
+  permittedRadiusMeters: 2000, // Permitted office boundary: 2km (2000 meters)
 };
 
 /**

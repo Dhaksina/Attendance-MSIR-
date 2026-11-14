@@ -87,7 +87,7 @@ export const EmployeeManagementPage: React.FC = () => {
     manager: '',
     status: 'Active' as EmployeeDirectoryItem['status'],
     geofenceEnabled: true,
-    assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 250m)',
+    assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
   });
   const [editSelectedSubordinateIds, setEditSelectedSubordinateIds] = useState<string[]>([]);
   const [editSubordinateSearchQuery, setEditSubordinateSearchQuery] = useState('');
@@ -136,7 +136,7 @@ export const EmployeeManagementPage: React.FC = () => {
     manager: 'Technical Director (Calibration)',
     status: 'Active' as EmployeeDirectoryItem['status'],
     geofenceEnabled: true,
-    assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 250m)',
+    assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
   }));
   const [selectedSubordinateIds, setSelectedSubordinateIds] = useState<string[]>([]);
   const [subordinateSearchQuery, setSubordinateSearchQuery] = useState('');
@@ -217,11 +217,7 @@ export const EmployeeManagementPage: React.FC = () => {
 
   // Permitted Geofence location perimeters
   const geofencePerimeterOptions = [
-    'Science & Industrial Resources (Chromepet, Tambaram • 250m)',
-    'MSIR Calibration Lab B (Tambaram • 150m)',
-    'Hyundai Assembly Corridor (Sriperumbudur • 500m)',
-    'Ashok Leyland Facility (Ennore • 500m)',
-    'TVS Motor Calibration Bay (Hosur • 500m)',
+    'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
   ];
 
   const filteredEmployees = useMemo(() => {
@@ -293,7 +289,7 @@ export const EmployeeManagementPage: React.FC = () => {
       form.isManager
         ? `Manager account for "${newFullName}" (ID: ${newEmpId}) created successfully with ${selectedSubordinateIds.length} direct report(s)!`
         : `Employee account "${newFullName}" (ID: ${newEmpId}) created successfully with login password! Geofence policy set to ${
-            form.geofenceEnabled ? 'Mandatory (250m)' : 'Exempted'
+            form.geofenceEnabled ? 'Mandatory (2km)' : 'Exempted'
           }.`
     );
     setIsAddModalOpen(false);
@@ -312,7 +308,7 @@ export const EmployeeManagementPage: React.FC = () => {
       manager: 'Technical Director (Calibration)',
       status: 'Active',
       geofenceEnabled: true,
-      assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 250m)',
+      assignedGeofence: 'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
     });
   };
 
@@ -348,7 +344,7 @@ export const EmployeeManagementPage: React.FC = () => {
       manager: emp.manager,
       status: emp.status,
       geofenceEnabled: emp.geofenceEnabled !== false,
-      assignedGeofence: emp.assignedGeofence || 'Science & Industrial Resources (Chromepet, Tambaram • 250m)',
+      assignedGeofence: emp.assignedGeofence || 'Science & Industrial Resources (Chromepet, Tambaram • 2km)',
     });
   };
 
@@ -421,12 +417,12 @@ export const EmployeeManagementPage: React.FC = () => {
     const nextVal = target.geofenceEnabled === false ? true : false;
     updateEmployee(id, {
       geofenceEnabled: nextVal,
-      assignedGeofence: nextVal ? 'Science & Industrial Resources (Chromepet, Tambaram • 250m)' : 'Exempted / Flexible',
+      assignedGeofence: nextVal ? 'Science & Industrial Resources (Chromepet, Tambaram • 2km)' : 'Exempted / Flexible',
     });
     addNotification(
       'Geofence Policy Updated',
       `${target.fullName} (${target.employeeId}) geofence verification is now ${
-        nextVal ? 'Mandatory (250m)' : 'Exempted'
+        nextVal ? 'Mandatory (2km)' : 'Exempted'
       }.`,
       'system'
     );
@@ -441,7 +437,7 @@ export const EmployeeManagementPage: React.FC = () => {
     selectedEmployeeIds.forEach((id) => {
       updateEmployee(id, {
         geofenceEnabled: enable,
-        assignedGeofence: enable ? 'Science & Industrial Resources (Chromepet, Tambaram • 250m)' : 'Exempted / Flexible',
+        assignedGeofence: enable ? 'Science & Industrial Resources (Chromepet, Tambaram • 2km)' : 'Exempted / Flexible',
       });
     });
     setSuccessBanner(
@@ -1381,7 +1377,7 @@ export const EmployeeManagementPage: React.FC = () => {
                       <div className="flex flex-col justify-center bg-emerald-50/80 border border-emerald-200 p-2.5 rounded-xl text-xs text-emerald-900">
                         <span className="font-bold flex items-center gap-1 text-[11px]">
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                          Strict 250m Verification Active
+                          Strict 2km Verification Active
                         </span>
                         <span className="text-[10px] text-emerald-700 mt-0.5">
                           Attendance is validated against GPS coordinates when punching in/out.
@@ -1947,7 +1943,7 @@ export const EmployeeManagementPage: React.FC = () => {
                   }`}
                 >
                   {viewEmployee.geofenceEnabled !== false
-                    ? `Mandatory (${viewEmployee.assignedGeofence || 'MSIR HQ 250m'})`
+                    ? `Mandatory (${viewEmployee.assignedGeofence || 'MSIR HQ 2km'})`
                     : 'Exempted / Flexible Remote'}
                 </span>
               </div>
